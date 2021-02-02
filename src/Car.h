@@ -40,6 +40,9 @@ public:
 	float getTurnRate();
 	float getAccelerationRate();
 	AlgorithmType getAlgorithmType();
+	Whisker* getLeftWhisker();
+	Whisker* getRightWhisker();
+	bool hasWhiskers();
 
 	//Setters
 	void setDestination(const glm::vec2 destination);
@@ -51,6 +54,7 @@ public:
 	void setStopDistance(float distance);
 	void setSlowDistance(float distance);
 	void setAlgorithmType(AlgorithmType type);
+	void reset();
 
 	//Whisker Managers
 	void addWhiskers();

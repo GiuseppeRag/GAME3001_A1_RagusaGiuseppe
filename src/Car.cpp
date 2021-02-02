@@ -1,5 +1,6 @@
 #include "Car.h"
 #include "TextureManager.h"
+#include "CollisionManager.h"
 #include "Util.h"
 #include "Game.h"
 typedef glm::vec2 v2;
@@ -19,7 +20,10 @@ Car::Car() : m_maxSpeed(8.0f), m_orientation(v2(0.0f, -1.0f)), m_rotationAngle(0
 	setType(CAR);
 }
 
-Car::~Car() = default;
+Car::~Car() {
+	deleteWhiskers();
+}
+
 
 void Car::draw()
 {
@@ -50,8 +54,8 @@ void Car::update()
 		if (whiskers.size() > 0) {
 			whiskers[0]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
 			whiskers[1]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
-			whiskers[0]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 30);
-			whiskers[1]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 30);
+			whiskers[0]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0);
+			whiskers[1]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0);
 		}
 		break;
 	}
@@ -63,8 +67,8 @@ void Car::clean()
 
 void Car::addWhiskers()
 {
-	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 30.0));
-	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 30.0));
+	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0));
+	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0));
 }
 
 void Car::deleteWhiskers()
@@ -74,6 +78,8 @@ void Car::deleteWhiskers()
 		whiskers[0] = nullptr;
 		delete whiskers[1];
 		whiskers[1] = nullptr;
+		whiskers.shrink_to_fit();
+		whiskers.resize(0);
 	}
 }
 
@@ -100,6 +106,21 @@ float Car::getAccelerationRate()
 AlgorithmType Car::getAlgorithmType()
 {
 	return m_algorithmType;
+}
+
+Whisker* Car::getLeftWhisker()
+{
+	return whiskers[1];
+}
+
+Whisker* Car::getRightWhisker()
+{
+	return whiskers[0];
+}
+
+bool Car::hasWhiskers()
+{
+	return (whiskers.size() > 0);
 }
 
 void Car::setDestination(const v2 destination)
@@ -152,6 +173,20 @@ void Car::setSlowDistance(float distance)
 void Car::setAlgorithmType(AlgorithmType type)
 {
 	m_algorithmType = type;
+}
+
+void Car::reset()
+{
+	m_maxSpeed = 8.0f; 
+	m_orientation = v2(0.0f, -1.0f);
+	m_rotationAngle = 0.0f;
+	m_accelerationRate = 10.0f;
+	m_turnRate = 10.0f;
+
+	getTransform()->position = v2(-50.0f, 125.0f);
+	getRigidBody()->velocity = v2(0.0f, 0.0f);
+	getRigidBody()->acceleration = v2(0.0f, 0.0f);
+	getRigidBody()->isColliding = false;
 }
 
 void Car::m_seekAndFleeAlgorithm()
@@ -215,6 +250,11 @@ void Car::m_avoidAlgorithm()
 {
 	auto deltaTime = TheGame::Instance()->getDeltaTime();
 
+	if (whiskers[0]->getRigidBody()->isColliding || whiskers[1]->getRigidBody()->isColliding)
+		m_maxSpeed = 3.0f;
+	else
+		m_maxSpeed = 8.0f;
+
 	m_targetDirection = m_destination - getTransform()->position;
 	m_targetDirection = Util::normalize(m_targetDirection);
 
@@ -227,7 +267,6 @@ void Car::m_avoidAlgorithm()
 		else if (target_rotation < 0)
 			setRotation(getRotation() - getTurnRate());
 	}
-
 	getRigidBody()->acceleration = getOrientation() * getAccelerationRate();
 	getRigidBody()->velocity += getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
 	getRigidBody()->velocity = Util::clamp(getRigidBody()->velocity, m_maxSpeed);

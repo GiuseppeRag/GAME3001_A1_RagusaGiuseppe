@@ -31,6 +31,40 @@ void PlayScene::draw()
 void PlayScene::update()
 {
 	updateDisplayList();
+	if (m_pCar->hasWhiskers())
+	{
+		if (CollisionManager::lineRectCheck(m_pCar->getLeftWhisker()->getStart(), m_pCar->getLeftWhisker()->getEnd(), m_pObstacle->getTransform()->position,
+			m_pObstacle->getWidth(), m_pObstacle->getHeight())) {
+			if (!m_pCar->getLeftWhisker()->getRigidBody()->isColliding) {
+				m_pCar->getRigidBody()->velocity * 0.4f;
+				m_pCar->getLeftWhisker()->getRigidBody()->isColliding = true;
+			}
+			m_pTemp_Node->getTransform()->position = m_pCar->getRightWhisker()->getEnd();
+			m_pCar->setDestination(m_pTemp_Node->getTransform()->position);
+		}
+		else {
+			m_pCar->getLeftWhisker()->getRigidBody()->isColliding = false;
+		}
+
+		if (CollisionManager::lineRectCheck(m_pCar->getRightWhisker()->getStart(), m_pCar->getRightWhisker()->getEnd(),
+			m_pObstacle->getTransform()->position, m_pObstacle->getWidth(), m_pObstacle->getHeight())) {
+			if (!m_pCar->getRightWhisker()->getRigidBody()->isColliding) {
+				m_pCar->getRigidBody()->velocity * 0.4f;
+				m_pCar->getRightWhisker()->getRigidBody()->isColliding = true;
+			}
+			m_pTemp_Node->getTransform()->position = m_pCar->getLeftWhisker()->getEnd();
+			m_pCar->setDestination(m_pTemp_Node->getTransform()->position);
+		}
+		else {
+			m_pCar->getRightWhisker()->getRigidBody()->isColliding = false;
+		}
+	}
+
+	if (m_pTemp_Node->isEnabled())
+	{
+		if (Util::distance(m_pCar->getTransform()->position, m_pTemp_Node->getTransform()->position) < 100)
+			m_pCar->setDestination(m_pTarget->getTransform()->position);
+	}
 }
 
 void PlayScene::clean()
@@ -62,10 +96,19 @@ void PlayScene::handleEvents()
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_1))
 		{
+			std::cout << "Seek Algorithm Activated" << std::endl;
 			m_pCar->setEnabled(true);
+			m_pCar->reset();
+			m_pCar->setDestination(m_pTarget->getTransform()->position);
 			m_pCar->setAlgorithmType(SEEK);
+			if (m_pCar->hasWhiskers())
+				m_pCar->deleteWhiskers();
 
 			m_pTarget->setEnabled(true);
+			m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+
+			m_pObstacle->setEnabled(false);
+			m_pTemp_Node->setEnabled(false);
 
 			m_pInstructionsLabel->setEnabled(false);
 			m_pSeekLabel->setEnabled(false);
@@ -76,10 +119,20 @@ void PlayScene::handleEvents()
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_2))
 		{
+			std::cout << "Flee Algorithm Activated" << std::endl;
 			m_pCar->setEnabled(true);
+			m_pCar->reset();
+			m_pCar->getTransform()->position = v2(300.0f, 250.0f);
+			m_pCar->setDestination(m_pTarget->getTransform()->position);
 			m_pCar->setAlgorithmType(FLEE);
+			if (m_pCar->hasWhiskers())
+				m_pCar->deleteWhiskers();
 
 			m_pTarget->setEnabled(true);
+			m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+
+			m_pObstacle->setEnabled(false);
+			m_pTemp_Node->setEnabled(false);
 
 			m_pInstructionsLabel->setEnabled(false);
 			m_pSeekLabel->setEnabled(false);
@@ -90,10 +143,19 @@ void PlayScene::handleEvents()
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_3))
 		{
+			std::cout << "Arrive Algorithm Activated" << std::endl;
 			m_pCar->setEnabled(true);
+			m_pCar->reset();
+			m_pCar->setDestination(m_pTarget->getTransform()->position);
 			m_pCar->setAlgorithmType(ARRIVE);
+			if (m_pCar->hasWhiskers())
+				m_pCar->deleteWhiskers();
 
 			m_pTarget->setEnabled(true);
+			m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+
+			m_pObstacle->setEnabled(false);
+			m_pTemp_Node->setEnabled(false);
 
 			m_pInstructionsLabel->setEnabled(false);
 			m_pSeekLabel->setEnabled(false);
@@ -107,23 +169,23 @@ void PlayScene::handleEvents()
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_4))
 		{
+			std::cout << "Avoid Algorithm Activated" << std::endl;
 			m_pCar->setEnabled(true);
+			m_pCar->reset();
 			m_pCar->setAlgorithmType(AVOID);
 			m_pCar->addWhiskers();
 
+			m_pObstacle->setEnabled(true);
+			m_pTemp_Node->setEnabled(true);
 			m_pTarget->setEnabled(true);
+			m_pTarget->getTransform()->position = v2(600.0f, 300.0f);
+			m_pCar->setDestination(m_pTarget->getTransform()->position);
 
 			m_pInstructionsLabel->setEnabled(false);
 			m_pSeekLabel->setEnabled(false);
 			m_pFleeLabel->setEnabled(false);
 			m_pArriveLabel->setEnabled(false);
 			m_pAvoidLabel->setEnabled(false);
-		}
-
-		//DEBUG ONLY
-		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_5))
-		{
-			m_pCar->deleteWhiskers();
 		}
 	}
 }
@@ -156,6 +218,14 @@ void PlayScene::start()
 	m_pTarget->setEnabled(false);
 	addChild(m_pTarget);
 
+	m_pObstacle = new Obstacle();
+	m_pObstacle->getTransform()->position = v2(250.0f, 250.0f);
+	m_pObstacle->setEnabled(false);
+	addChild(m_pObstacle);
+
+	m_pTemp_Node = new TempNode();
+	m_pTemp_Node->setEnabled(false);
+
 	m_pCar = new Car();
 	m_pCar->getTransform()->position = v2(100.0f, 100.0f);
 	m_pCar->setEnabled(false);
@@ -174,18 +244,128 @@ void PlayScene::GUI_Function() const
 {
 	// Always open with a NewFrame
 	ImGui::NewFrame();
-
-	// See examples by uncommenting the following - also look at imgui_demo.cpp in the IMGUI filter
-	//ImGui::ShowDemoWindow();
 	
 	ImGui::Begin("GAME3001 Assingment 1", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
 
 	if(ImGui::Button("Seek"))
 	{
 		std::cout << "Seek Algorithm Activated" << std::endl;
+		m_pCar->setEnabled(true);
+		m_pCar->reset();
+		m_pCar->setDestination(m_pTarget->getTransform()->position);
+		m_pCar->setAlgorithmType(SEEK);
+		if (m_pCar->hasWhiskers())
+			m_pCar->deleteWhiskers();
+
+		m_pTarget->setEnabled(true);
+		m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+
+		m_pObstacle->setEnabled(false);
+		m_pTemp_Node->setEnabled(false);
+
+		m_pInstructionsLabel->setEnabled(false);
+		m_pSeekLabel->setEnabled(false);
+		m_pFleeLabel->setEnabled(false);
+		m_pArriveLabel->setEnabled(false);
+		m_pAvoidLabel->setEnabled(false);
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Flee"))
+	{
+		std::cout << "Flee Algorithm Activated" << std::endl;
+		m_pCar->setEnabled(true);
+		m_pCar->reset();
+		m_pCar->getTransform()->position = v2(300.0f, 250.0f);
+		m_pCar->setDestination(m_pTarget->getTransform()->position);
+		m_pCar->setAlgorithmType(FLEE);
+		if (m_pCar->hasWhiskers())
+			m_pCar->deleteWhiskers();
+
+		m_pTarget->setEnabled(true);
+		m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+
+		m_pObstacle->setEnabled(false);
+		m_pTemp_Node->setEnabled(false);
+
+		m_pInstructionsLabel->setEnabled(false);
+		m_pSeekLabel->setEnabled(false);
+		m_pFleeLabel->setEnabled(false);
+		m_pArriveLabel->setEnabled(false);
+		m_pAvoidLabel->setEnabled(false);
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Arrive"))
+	{
+		std::cout << "Arrive Algorithm Activated" << std::endl;
+		m_pCar->setEnabled(true);
+		m_pCar->reset();
+		m_pCar->setDestination(m_pTarget->getTransform()->position);
+		m_pCar->setAlgorithmType(ARRIVE);
+		if (m_pCar->hasWhiskers())
+			m_pCar->deleteWhiskers();
+
+		m_pTarget->setEnabled(true);
+		m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+
+		m_pObstacle->setEnabled(false);
+		m_pTemp_Node->setEnabled(false);
+
+		m_pInstructionsLabel->setEnabled(false);
+		m_pSeekLabel->setEnabled(false);
+		m_pFleeLabel->setEnabled(false);
+		m_pArriveLabel->setEnabled(false);
+		m_pAvoidLabel->setEnabled(false);
+
+		m_pCar->setSlowDistance(m_pTarget->getWidth() * 6);
+		m_pCar->setStopDistance(m_pTarget->getWidth());
+	}
+
+	ImGui::SameLine();
+
+	if (ImGui::Button("Avoid"))
+	{
+		std::cout << "Avoid Algorithm Activated" << std::endl;
+		m_pCar->setEnabled(true);
+		m_pCar->reset();
+		m_pCar->setAlgorithmType(AVOID);
+		m_pCar->addWhiskers();
+
+		m_pObstacle->setEnabled(true);
+		m_pTemp_Node->setEnabled(true);
+		m_pTarget->setEnabled(true);
+		m_pTarget->getTransform()->position = v2(600.0f, 300.0f);
+		m_pCar->setDestination(m_pTarget->getTransform()->position);
+
+		m_pInstructionsLabel->setEnabled(false);
+		m_pSeekLabel->setEnabled(false);
+		m_pFleeLabel->setEnabled(false);
+		m_pArriveLabel->setEnabled(false);
+		m_pAvoidLabel->setEnabled(false);
 	}
 
 	ImGui::Separator();
+
+	if (ImGui::Button("Reset"))
+	{
+		std::cout << "Resetting The Screen" << std::endl;
+		m_pCar->setEnabled(false);
+		m_pCar->setAlgorithmType(NO_ALGORITHM);
+		m_pTarget->setEnabled(false);
+		m_pObstacle->setEnabled(false);
+		m_pTemp_Node->setEnabled(false);
+		if (m_pCar->hasWhiskers())
+			m_pCar->deleteWhiskers();
+
+		m_pSeekLabel->setEnabled(true);
+		m_pFleeLabel->setEnabled(true);
+		m_pArriveLabel->setEnabled(true);
+		m_pAvoidLabel->setEnabled(true);
+		m_pInstructionsLabel->setEnabled(true);
+	}
 
 	static float float3[3] = { 0.0f, 1.0f, 1.5f };
 	if(ImGui::SliderFloat3("My Slider", float3, 0.0f, 2.0f))

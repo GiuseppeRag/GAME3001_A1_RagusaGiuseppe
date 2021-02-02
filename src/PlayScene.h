@@ -9,6 +9,9 @@
 #include "Label.h"
 #include "Car.h"
 #include "Target.h"
+#include "Obstacle.h"
+#include "TempNode.h"
+#include "Util.h"
 
 class PlayScene : public Scene
 {
@@ -39,6 +42,8 @@ private:
 	// Game Objects
 	Car* m_pCar;
 	Target* m_pTarget;
+	Obstacle* m_pObstacle;
+	TempNode* m_pTemp_Node;
 };
 
 #endif /* defined (__PLAY_SCENE__) */

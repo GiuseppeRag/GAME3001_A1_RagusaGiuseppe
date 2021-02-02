@@ -10,7 +10,7 @@ glm::vec2 Whisker::convertToOrientation(float rotation)
 Whisker::Whisker(glm::vec2 actorPos, float rotation)
 {
 	m_start = actorPos;
-	m_end = actorPos + (convertToOrientation(rotation) * 125.0f);
+	m_end = actorPos + (convertToOrientation(rotation) * 130.0f);
 }
 
 Whisker::~Whisker() = default;
@@ -35,7 +35,7 @@ void Whisker::setStart(glm::vec2 vec)
 
 void Whisker::setEnd(glm::vec2 start, float rotation)
 {
-	m_end = start + (convertToOrientation(rotation) * 125.0f);
+	m_end = start + (convertToOrientation(rotation) * 130.0f);
 }
 
 glm::vec2 Whisker::getStart()

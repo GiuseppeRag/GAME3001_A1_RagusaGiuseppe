@@ -7,7 +7,8 @@ enum AlgorithmType
 	SEEK,
 	FLEE,
 	ARRIVE,
-	AVOID
+	AVOID,
+	NO_ALGORITHM
 };
 
 #endif // !__ALGORITHM_TYPE__

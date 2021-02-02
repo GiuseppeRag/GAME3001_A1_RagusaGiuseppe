@@ -7,6 +7,7 @@ enum GameObjectType {
 	WALL,
 	TARGET,
 	OBSTACLE,
+	TEMP_NODE,
 	SHIP,
 	PLANE,
 	PLAYER,
