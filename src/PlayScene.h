@@ -44,6 +44,13 @@ private:
 	Target* m_pTarget;
 	Obstacle* m_pObstacle;
 	TempNode* m_pTemp_Node;
+
+	// State Functions
+	void loadSeek() const;
+	void loadFlee() const;
+	void loadArrive() const;
+	void loadAvoid() const;
+	void reset() const;
 };
 
 #endif /* defined (__PLAY_SCENE__) */

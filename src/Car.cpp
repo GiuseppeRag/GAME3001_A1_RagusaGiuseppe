@@ -38,6 +38,7 @@ void Car::draw()
 
 void Car::update()
 {
+	/*
 	switch (getAlgorithmType())
 	{
 	case SEEK:
@@ -59,6 +60,19 @@ void Car::update()
 		}
 		break;
 	}
+	*/
+
+	//Only create whiskers if the algorithm type is AVOID
+	if (m_algorithmType == AVOID) {
+		//only create whiskers if there are none already
+		if (whiskers.size() > 0) {
+			whiskers[0]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
+			whiskers[1]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
+			whiskers[0]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0);
+			whiskers[1]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0);
+		}
+	}
+	m_Move();
 }
 
 void Car::clean()
@@ -67,12 +81,14 @@ void Car::clean()
 
 void Car::addWhiskers()
 {
+	//add new whiskers
 	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0));
 	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0));
 }
 
 void Car::deleteWhiskers()
 {
+	//delete whiskers to free up memory
 	if (whiskers.size() > 0) {
 		delete whiskers[0];
 		whiskers[0] = nullptr;
@@ -269,6 +285,53 @@ void Car::m_avoidAlgorithm()
 	}
 	getRigidBody()->acceleration = getOrientation() * getAccelerationRate();
 	getRigidBody()->velocity += getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
+	getRigidBody()->velocity = Util::clamp(getRigidBody()->velocity, m_maxSpeed);
+	getTransform()->position += getRigidBody()->velocity;
+}
+
+void Car::m_Move()
+{
+	auto deltaTime = TheGame::Instance()->getDeltaTime();
+
+	//If AVOID is the algorithm type, adjust the speed when the whiskers are colliding, to give it more turning control
+	if (m_algorithmType == AVOID && (whiskers[0]->getRigidBody()->isColliding || whiskers[1]->getRigidBody()->isColliding))
+		m_maxSpeed = 3.0f;
+	else
+		m_maxSpeed = 8.0f;
+
+	m_targetDirection = m_destination - getTransform()->position;
+	m_targetDirection = Util::normalize(m_targetDirection);
+
+	auto target_rotation = Util::signedAngle(getOrientation(), m_targetDirection);
+	float turn_sensitivity = 5.0f;
+
+	if (abs(target_rotation) > turn_sensitivity) {
+		if (target_rotation > 0)
+			setRotation(getRotation() + getTurnRate());
+		else if (target_rotation < 0)
+			setRotation(getRotation() - getTurnRate());
+	}
+
+	getRigidBody()->acceleration = getOrientation() * getAccelerationRate();
+
+	//If FLEE is the algorithm type, subtract the acceleration from the current velocity, since it is moving away from the target. All
+	//other algorithms will move towards the target
+	if (m_algorithmType == FLEE)
+		getRigidBody()->velocity -= getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
+	else
+		getRigidBody()->velocity += getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
+
+	//If ARRIVE is the algorithm type, slow down the car as it approaches the object
+	if (m_algorithmType == ARRIVE) {
+		const float distance = Util::distance(getTransform()->position, m_destination);
+		if (distance < m_slowDistance) {
+			m_maxSpeed = 8.0f * float(distance / m_slowDistance);
+		}
+		if (distance < m_stopDistance) {
+			m_maxSpeed = 0.0f;
+		}
+	}
+
 	getRigidBody()->velocity = Util::clamp(getRigidBody()->velocity, m_maxSpeed);
 	getTransform()->position += getRigidBody()->velocity;
 }

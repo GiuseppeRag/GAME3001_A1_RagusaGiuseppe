@@ -23,6 +23,7 @@ private:
 	std::vector<Whisker*> whiskers;
 
 	//Private functions
+	void m_Move();
 	void m_seekAndFleeAlgorithm();
 	void m_arriveAlgorithm();
 	void m_avoidAlgorithm();
