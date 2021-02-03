@@ -310,7 +310,7 @@ void PlayScene::GUI_Function() const
 	// Always open with a NewFrame
 	ImGui::NewFrame();
 	
-	ImGui::Begin("GAME3001 Assingment 1", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
+	ImGui::Begin("GAME3001 Assignment 1", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
 
 	if(ImGui::Button("Seek"))
 		loadSeek();
@@ -336,7 +336,7 @@ void PlayScene::GUI_Function() const
 		reset();
 
 	static float coords[2] = { m_pTarget->getTransform()->position.x, m_pTarget->getTransform()->position.y };
-	if(ImGui::SliderFloat2("My Slider", coords, 0.0f, 800.0f))
+	if(ImGui::SliderFloat2("Target Pos", coords, 0.0f, 800.0f))
 	{
 		m_pTarget->getTransform()->position = v2(coords[0], coords[1]);
 		m_pCar->setDestination(m_pTarget->getTransform()->position);
