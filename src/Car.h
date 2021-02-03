@@ -24,9 +24,6 @@ private:
 
 	//Private functions
 	void m_Move();
-	void m_seekAndFleeAlgorithm();
-	void m_arriveAlgorithm();
-	void m_avoidAlgorithm();
 
 public:
 	Car();
@@ -41,8 +38,12 @@ public:
 	float getTurnRate();
 	float getAccelerationRate();
 	AlgorithmType getAlgorithmType();
+
+	//Whisher Functions
 	Whisker* getLeftWhisker();
 	Whisker* getRightWhisker();
+	Whisker* getBackLeftWhisker();
+	Whisker* getBackRightWhisker();
 	bool hasWhiskers();
 
 	//Setters

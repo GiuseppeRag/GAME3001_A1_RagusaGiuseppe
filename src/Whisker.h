@@ -6,7 +6,7 @@
 class Whisker : public DisplayObject
 {
 public:
-	Whisker(glm::vec2 actorPos, float rotation);
+	Whisker(glm::vec2 actorPos, float rotation, float size);
 	~Whisker();
 
 	void draw() override;
@@ -14,7 +14,7 @@ public:
 	void clean() override;
 
 	void setStart(glm::vec2 vec);
-	void setEnd(glm::vec2 start, float rotation);
+	void setEnd(glm::vec2 start, float rotation, float size);
 	glm::vec2 getStart();
 	glm::vec2 getEnd();
 private:

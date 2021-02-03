@@ -31,10 +31,16 @@ void PlayScene::draw()
 void PlayScene::update()
 {
 	updateDisplayList();
+	//No need to check whisker collision if the whiskers aren't even created
 	if (m_pCar->hasWhiskers())
 	{
-		if (CollisionManager::lineRectCheck(m_pCar->getLeftWhisker()->getStart(), m_pCar->getLeftWhisker()->getEnd(), m_pObstacle->getTransform()->position,
-			m_pObstacle->getWidth(), m_pObstacle->getHeight())) {
+		//Did the Left whiskers collide with the obstacle?
+		if (CollisionManager::lineRectCheck(m_pCar->getLeftWhisker()->getStart(), m_pCar->getLeftWhisker()->getEnd(), 
+			m_pObstacle->getTransform()->position, m_pObstacle->getWidth(), m_pObstacle->getHeight())
+			|| (CollisionManager::lineRectCheck(m_pCar->getBackLeftWhisker()->getStart(), m_pCar->getBackLeftWhisker()->getEnd(), 
+			m_pObstacle->getTransform()->position, m_pObstacle->getWidth(), m_pObstacle->getHeight())))
+		{
+			//set the new destination to a temporary node on the RIGHT side of the Car
 			if (!m_pCar->getLeftWhisker()->getRigidBody()->isColliding) {
 				m_pCar->getRigidBody()->velocity *= 0.6f;
 				m_pCar->getLeftWhisker()->getRigidBody()->isColliding = true;
@@ -45,8 +51,13 @@ void PlayScene::update()
 		else
 			m_pCar->getLeftWhisker()->getRigidBody()->isColliding = false;
 
+		//Did the Right whiskers collide with the obstacle?
 		if (CollisionManager::lineRectCheck(m_pCar->getRightWhisker()->getStart(), m_pCar->getRightWhisker()->getEnd(),
-			m_pObstacle->getTransform()->position, m_pObstacle->getWidth(), m_pObstacle->getHeight())) {
+			m_pObstacle->getTransform()->position, m_pObstacle->getWidth(), m_pObstacle->getHeight())
+			|| (CollisionManager::lineRectCheck(m_pCar->getBackRightWhisker()->getStart(), m_pCar->getBackRightWhisker()->getEnd(),
+			m_pObstacle->getTransform()->position, m_pObstacle->getWidth(), m_pObstacle->getHeight())))
+		{
+			//set the new destination to a temporary node on the LEFT side of the Car
 			if (!m_pCar->getRightWhisker()->getRigidBody()->isColliding) {
 				m_pCar->getRigidBody()->velocity *= 0.6f;
 				m_pCar->getRightWhisker()->getRigidBody()->isColliding = true;
@@ -59,10 +70,12 @@ void PlayScene::update()
 	}
 
 	if (m_pTemp_Node->isEnabled()) {
+		//If the car is in range of the node, change the destination back to the target
 		if (Util::distance(m_pCar->getTransform()->position, m_pTemp_Node->getTransform()->position) < 100)
 			m_pCar->setDestination(m_pTarget->getTransform()->position);
 	}
 
+	//Check collision between the Target and Car
 	CollisionManager::circleAABBCheck(m_pTarget, m_pCar);
 }
 
@@ -71,6 +84,7 @@ void PlayScene::clean()
 	removeAllChildren();
 }
 
+//Load all the settings for the LOAD algorithm
 void PlayScene::loadSeek() const
 {
 	std::cout << "Seek Algorithm Activated" << std::endl;
@@ -78,13 +92,13 @@ void PlayScene::loadSeek() const
 	SoundManager::Instance().playSound("car_engine", 0);
 	m_pCar->setEnabled(true);
 	m_pCar->reset();
-	m_pCar->setDestination(m_pTarget->getTransform()->position);
 	m_pCar->setAlgorithmType(SEEK);
 	if (m_pCar->hasWhiskers())
 		m_pCar->deleteWhiskers();
 
 	m_pTarget->setEnabled(true);
 	m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+	m_pCar->setDestination(m_pTarget->getTransform()->position);
 
 	m_pObstacle->setEnabled(false);
 	m_pTemp_Node->setEnabled(false);
@@ -96,6 +110,7 @@ void PlayScene::loadSeek() const
 	m_pAvoidLabel->setEnabled(false);
 }
 
+//Load all the settings for the FLEE algorithm
 void PlayScene::loadFlee() const
 {
 	std::cout << "Flee Algorithm Activated" << std::endl;
@@ -104,13 +119,13 @@ void PlayScene::loadFlee() const
 	m_pCar->setEnabled(true);
 	m_pCar->reset();
 	m_pCar->getTransform()->position = v2(300.0f, 250.0f);
-	m_pCar->setDestination(m_pTarget->getTransform()->position);
 	m_pCar->setAlgorithmType(FLEE);
 	if (m_pCar->hasWhiskers())
 		m_pCar->deleteWhiskers();
 
 	m_pTarget->setEnabled(true);
 	m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+	m_pCar->setDestination(m_pTarget->getTransform()->position);
 
 	m_pObstacle->setEnabled(false);
 	m_pTemp_Node->setEnabled(false);
@@ -122,6 +137,7 @@ void PlayScene::loadFlee() const
 	m_pAvoidLabel->setEnabled(false);
 }
 
+//load all the settings for the ARRIVE algorithm
 void PlayScene::loadArrive() const
 {
 	std::cout << "Arrive Algorithm Activated" << std::endl;
@@ -129,13 +145,13 @@ void PlayScene::loadArrive() const
 	SoundManager::Instance().playSound("car_engine", 0);
 	m_pCar->setEnabled(true);
 	m_pCar->reset();
-	m_pCar->setDestination(m_pTarget->getTransform()->position);
 	m_pCar->setAlgorithmType(ARRIVE);
 	if (m_pCar->hasWhiskers())
 		m_pCar->deleteWhiskers();
 
 	m_pTarget->setEnabled(true);
 	m_pTarget->getTransform()->position = v2(400.0f, 300.0f);
+	m_pCar->setDestination(m_pTarget->getTransform()->position);
 
 	m_pObstacle->setEnabled(false);
 	m_pTemp_Node->setEnabled(false);
@@ -150,6 +166,8 @@ void PlayScene::loadArrive() const
 	m_pCar->setStopDistance(m_pTarget->getWidth());
 }
 
+
+//load all the settings for the Obstacle Avoidance algorithm
 void PlayScene::loadAvoid() const
 {
 	std::cout << "Avoid Algorithm Activated" << std::endl;
@@ -158,6 +176,8 @@ void PlayScene::loadAvoid() const
 	m_pCar->setEnabled(true);
 	m_pCar->reset();
 	m_pCar->setAlgorithmType(AVOID);
+	if (m_pCar->hasWhiskers())
+		m_pCar->deleteWhiskers();
 	m_pCar->addWhiskers();
 
 	m_pObstacle->setEnabled(true);
@@ -173,6 +193,7 @@ void PlayScene::loadAvoid() const
 	m_pAvoidLabel->setEnabled(false);
 }
 
+//Reset the settings to an empty screen with text
 void PlayScene::reset() const
 {
 	std::cout << "Resetting The Screen" << std::endl;
@@ -211,29 +232,19 @@ void PlayScene::handleEvents()
 	if (SDL_NumJoysticks() < 1)
 	{
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_ESCAPE))
-		{
 			TheGame::Instance()->quit();
-		}
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_1))
-		{
 			loadSeek();
-		}
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_2))
-		{
 			loadFlee();
-		}
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_3))
-		{
 			loadArrive();
-		}
 
 		if (EventManager::Instance().isKeyDown(SDL_SCANCODE_4))
-		{
 			loadAvoid();
-		}
 	}
 }
 
@@ -302,37 +313,27 @@ void PlayScene::GUI_Function() const
 	ImGui::Begin("GAME3001 Assingment 1", NULL, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_MenuBar);
 
 	if(ImGui::Button("Seek"))
-	{
 		loadSeek();
-	}
 
 	ImGui::SameLine();
 
 	if (ImGui::Button("Flee"))
-	{
 		loadFlee();
-	}
 
 	ImGui::SameLine();
 
 	if (ImGui::Button("Arrive"))
-	{
 		loadArrive();
-	}
 
 	ImGui::SameLine();
 
 	if (ImGui::Button("Avoid"))
-	{
 		loadAvoid();
-	}
 
 	ImGui::Separator();
 
 	if (ImGui::Button("Reset"))
-	{
 		reset();
-	}
 
 	static float coords[2] = { m_pTarget->getTransform()->position.x, m_pTarget->getTransform()->position.y };
 	if(ImGui::SliderFloat2("My Slider", coords, 0.0f, 800.0f))

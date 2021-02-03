@@ -31,45 +31,25 @@ void Car::draw()
 	Util::DrawLine(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), 
 		v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)) + m_orientation * 60.0f);
 	if (whiskers.size() > 0) {
-		whiskers[0]->draw();
-		whiskers[1]->draw();
+		for (int i = 0; i < whiskers.size(); i++)
+			whiskers[i]->draw();
 	}
 }
 
 void Car::update()
 {
-	/*
-	switch (getAlgorithmType())
-	{
-	case SEEK:
-		m_seekAndFleeAlgorithm();
-		break;
-	case FLEE:
-		m_seekAndFleeAlgorithm();
-		break;
-	case ARRIVE:
-		m_arriveAlgorithm();
-		break;
-	case AVOID:
-		m_avoidAlgorithm();
-		if (whiskers.size() > 0) {
-			whiskers[0]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
-			whiskers[1]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
-			whiskers[0]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0);
-			whiskers[1]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0);
-		}
-		break;
-	}
-	*/
-
 	//Only create whiskers if the algorithm type is AVOID
 	if (m_algorithmType == AVOID) {
-		//only create whiskers if there are none already
+		//only update whiskers if there are none already
 		if (whiskers.size() > 0) {
 			whiskers[0]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
 			whiskers[1]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
-			whiskers[0]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0);
-			whiskers[1]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0);
+			whiskers[2]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
+			whiskers[3]->setStart(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)));
+			whiskers[0]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 30.0, 130.0f);
+			whiskers[1]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 30.0, 130.0f);
+			whiskers[2]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 100.0, 80.0f);
+			whiskers[3]->setEnd(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 100.0, 80.0f);
 		}
 	}
 	m_Move();
@@ -82,18 +62,20 @@ void Car::clean()
 void Car::addWhiskers()
 {
 	//add new whiskers
-	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 35.0));
-	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 35.0));
+	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 30.0, 110.0f));
+	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 30.0, 110.0f));
+	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle - 100.0, 80.0f));
+	whiskers.push_back(new Whisker(v2(getTransform()->position.x + (getWidth() / 2), getTransform()->position.y + (getHeight() / 2)), m_rotationAngle + 100.0, 80.0f));
 }
 
 void Car::deleteWhiskers()
 {
 	//delete whiskers to free up memory
 	if (whiskers.size() > 0) {
-		delete whiskers[0];
-		whiskers[0] = nullptr;
-		delete whiskers[1];
-		whiskers[1] = nullptr;
+		for (int i = 0; i < whiskers.size(); i++) {
+			delete whiskers[i];
+			whiskers[i] = nullptr;
+		}
 		whiskers.shrink_to_fit();
 		whiskers.resize(0);
 	}
@@ -132,6 +114,16 @@ Whisker* Car::getLeftWhisker()
 Whisker* Car::getRightWhisker()
 {
 	return whiskers[0];
+}
+
+Whisker* Car::getBackLeftWhisker()
+{
+	return whiskers[2];
+}
+
+Whisker* Car::getBackRightWhisker()
+{
+	return whiskers[3];
 }
 
 bool Car::hasWhiskers()
@@ -205,96 +197,14 @@ void Car::reset()
 	getRigidBody()->isColliding = false;
 }
 
-void Car::m_seekAndFleeAlgorithm()
-{
-	auto deltaTime = TheGame::Instance()->getDeltaTime();
-
-	m_targetDirection = m_destination - getTransform()->position;
-	m_targetDirection = Util::normalize(m_targetDirection);
-
-	auto target_rotation = Util::signedAngle(getOrientation(), m_targetDirection);
-	float turn_sensitivity = 5.0f;
-
-	if (abs(target_rotation) > turn_sensitivity) {
-		if (target_rotation > 0)
-			setRotation(getRotation() + getTurnRate());
-		else if (target_rotation < 0)
-			setRotation(getRotation() - getTurnRate());
-	}
-
-	getRigidBody()->acceleration = getOrientation() * getAccelerationRate();
-	if (m_algorithmType == SEEK)
-		getRigidBody()->velocity += getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
-	else
-		getRigidBody()->velocity -= getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
-	getRigidBody()->velocity = Util::clamp(getRigidBody()->velocity, m_maxSpeed);
-	getTransform()->position += getRigidBody()->velocity;
-}
-
-void Car::m_arriveAlgorithm()
-{
-	auto deltaTime = TheGame::Instance()->getDeltaTime();
-
-	m_targetDirection = m_destination - getTransform()->position;
-	m_targetDirection = Util::normalize(m_targetDirection);
-
-	auto target_rotation = Util::signedAngle(getOrientation(), m_targetDirection);
-	float turn_sensitivity = 5.0f;
-
-	if (abs(target_rotation) > turn_sensitivity) {
-		if (target_rotation > 0)
-			setRotation(getRotation() + getTurnRate());
-		else if (target_rotation < 0)
-			setRotation(getRotation() - getTurnRate());
-	}
-
-	getRigidBody()->acceleration = getOrientation() * getAccelerationRate();
-	getRigidBody()->velocity += getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
-
-	const float distance = Util::distance(getTransform()->position, m_destination);
-	if (distance < m_slowDistance) {
-		m_maxSpeed =  8.0f * float(distance / m_slowDistance);
-	}
-	if (distance < m_stopDistance) {
-		m_maxSpeed = 0.0f;
-	}
-	getRigidBody()->velocity = Util::clamp(getRigidBody()->velocity, m_maxSpeed);
-	getTransform()->position += getRigidBody()->velocity;
-}
-
-void Car::m_avoidAlgorithm()
-{
-	auto deltaTime = TheGame::Instance()->getDeltaTime();
-
-	if (whiskers[0]->getRigidBody()->isColliding || whiskers[1]->getRigidBody()->isColliding)
-		m_maxSpeed = 3.0f;
-	else
-		m_maxSpeed = 8.0f;
-
-	m_targetDirection = m_destination - getTransform()->position;
-	m_targetDirection = Util::normalize(m_targetDirection);
-
-	auto target_rotation = Util::signedAngle(getOrientation(), m_targetDirection);
-	float turn_sensitivity = 5.0f;
-
-	if (abs(target_rotation) > turn_sensitivity) {
-		if (target_rotation > 0)
-			setRotation(getRotation() + getTurnRate());
-		else if (target_rotation < 0)
-			setRotation(getRotation() - getTurnRate());
-	}
-	getRigidBody()->acceleration = getOrientation() * getAccelerationRate();
-	getRigidBody()->velocity += getOrientation() * float(deltaTime) + 0.5f * getRigidBody()->acceleration * float(deltaTime);
-	getRigidBody()->velocity = Util::clamp(getRigidBody()->velocity, m_maxSpeed);
-	getTransform()->position += getRigidBody()->velocity;
-}
-
 void Car::m_Move()
 {
+	//get the time elapsed each game loop iteration
 	auto deltaTime = TheGame::Instance()->getDeltaTime();
 
 	//If AVOID is the algorithm type, adjust the speed when the whiskers are colliding, to give it more turning control
-	if (m_algorithmType == AVOID && (whiskers[0]->getRigidBody()->isColliding || whiskers[1]->getRigidBody()->isColliding))
+	if (m_algorithmType == AVOID && (whiskers[0]->getRigidBody()->isColliding || whiskers[1]->getRigidBody()->isColliding 
+		|| whiskers[2]->getRigidBody()->isColliding || whiskers[3]->getRigidBody()->isColliding))
 		m_maxSpeed = 3.0f;
 	else
 		m_maxSpeed = 8.0f;
